@@ -267,7 +267,7 @@
   <customwidget>
    <class>OpenglGrid</class>
    <extends>QOpenGLWidget</extends>
-   <header>../../../gl_grid/openglgrid.h</header>
+   <header>../../../catafot/openglgrid.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
