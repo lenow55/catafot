@@ -47,6 +47,8 @@ else()
             shaders.qrc
             mainwindow.ui
             mainwindow.h mainwindow.cpp
+            algorithms.h
+            algorithms.cpp
         )
     endif()
 endif()
