@@ -4,12 +4,9 @@
 #include <QPair>
 #include <QVector2D>
 
-int cross_sem(
+QPair<int,QVector2D> cross_sem(
     const QPair<QVector2D, QVector2D> &ab,
-    const QPair<QVector2D, QVector2D> &cd,
-    float &t,
-    float &tau,
-    QVector2D &q_point
+    const QPair<QVector2D, QVector2D> &cd
     );
 
 #endif // ALGORITHMS_H
