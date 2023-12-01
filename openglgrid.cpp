@@ -1,6 +1,7 @@
 #include "openglgrid.h"
 #include <QOffscreenSurface>
 #include <QMouseEvent>
+#include "algorithms.h"
 
 #define DEFAULT_POINT_SIZE          14.0
 #define GRAPH_LINE_WIDTH            4.0
@@ -118,14 +119,14 @@ void OpenglGrid::initShaders()
     if (!programGrid.link())
         close();
 
-    if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader_points.glsl"))
-        close();
-    //    if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/shaders/gshader_points.glsl"))
-    //        close();
-    if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader_points.glsl"))
-        close();
-    if (!programPoints.link())
-        close();
+    // if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader_points.glsl"))
+    //     close();
+    // //    if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/shaders/gshader_points.glsl"))
+    // //        close();
+    // if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader_points.glsl"))
+    //     close();
+    // if (!programPoints.link())
+    //     close();
 }
 
 void OpenglGrid::createBuffers()
@@ -165,26 +166,26 @@ void OpenglGrid::createBuffers()
     ApproxVao.release();
 
     // буфер маски выделенных точек
-    sPointsBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    sPointsBuffer.create();
+    // sPointsBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    // sPointsBuffer.create();
 
-    sPointsVao.create();
-    sPointsVao.bind();
+    // sPointsVao.create();
+    // sPointsVao.bind();
 
-    sPointsBuffer.bind();
-    sPointsBuffer.allocate(50 * sizeof(QVector3D));
-    int colorLocation = programPoints.attributeLocation("color");
-    programPoints.enableAttributeArray(colorLocation);
-    programPoints.setAttributeBuffer(colorLocation, GL_FLOAT, 0, 3);
+    // sPointsBuffer.bind();
+    // sPointsBuffer.allocate(50 * sizeof(QVector3D));
+    // int colorLocation = programPoints.attributeLocation("color");
+    // programPoints.enableAttributeArray(colorLocation);
+    // programPoints.setAttributeBuffer(colorLocation, GL_FLOAT, 0, 3);
 
-    approxBuffer.bind();
-    vertexLocation = programPoints.attributeLocation("vertex");
-    programPoints.enableAttributeArray(vertexLocation);
-    programPoints.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 2);
+    // approxBuffer.bind();
+    // vertexLocation = programPoints.attributeLocation("vertex");
+    // programPoints.enableAttributeArray(vertexLocation);
+    // programPoints.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 2);
 
-    sPointsBuffer.release();
-    approxBuffer.release();
-    sPointsVao.release();
+    // sPointsBuffer.release();
+    // approxBuffer.release();
+    // sPointsVao.release();
 //    sPointsVao.release();
 
     // буфер выходной аппроксимированной линии
@@ -233,27 +234,7 @@ void OpenglGrid::XAxisLabelsRendering()
 
 void OpenglGrid::PointsLabelsRendering()
 {
-    QVector3D fontColor(0.02f, 0.32f, 0.0f);
-    programFont.bind();
-    programFont.setUniformValue("mvp_matrix", getCoordMatrix());
-    programFont.setUniformValue("textColor", fontColor);
-    programFont.setUniformValue("text", 0);
-    for(int count = 0; count < verticesApprox.size(); count++)
-    {
-        QString label = "P" + QString::number(count);
-        fpObj->drawFontLeftGeometry(
-            &programFont,
-            verticesApprox.at(count).x()-DEFAULT_POINT_SIZE - 5.0f,
-            verticesApprox.at(count).y()+DEFAULT_POINT_SIZE + 5.0f,
-            label, 0.4f);
-        QString sig_label = "sig" + QString::number(sigmaApprox.at(count));
-        fpObj->drawFontGeometry(
-            &programFont,
-            verticesApprox.at(count).x()+DEFAULT_POINT_SIZE + 5.0f,
-            verticesApprox.at(count).y()-DEFAULT_POINT_SIZE - 5.0f,
-            sig_label, 0.4f);
-    }
-    programFont.release();
+    qDebug() << "PointsLabelsRendering";
 }
 
 void OpenglGrid::addApproxPoint(const QVector2D &point)
@@ -313,6 +294,14 @@ void OpenglGrid::genMirror(int count, float angle, float len)
 
     qDebug() << verticesApprox;
 
+    QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,50));
+    std::tuple<int,QVector2D,double,double> result;
+    result = cross_sem(
+        QPair<QVector2D,QVector2D>(
+            verticesApprox.at(2),verticesApprox.at(3)),
+            ray
+        );
+
     ApproxVao.bind();
     approxBuffer.bind();
     // добавляем точку в хранилище
@@ -363,107 +352,17 @@ void OpenglGrid::modifyApproxPoint(const QVector2D &point)
 
 void OpenglGrid::setPointSelection(int newIndex)
 {
-    QVector3D color(0.27f, 0.33f, 1.0f);
-    QVector3D colorSelect(0.0f, 0.85f, 0.03f);
-
-    sPointsVao.bind();
-    sPointsBuffer.bind();
-    //снимаем старое выделение, если оно было
-    const void *color_buf = (void *)&color;
-    const void *colorSelect_buf = (void *)&colorSelect;
-    if (pointSelectIndex != -1)
-    {
-        sPointsBuffer.write(
-            pointSelectIndex * sizeof(QVector3D),
-            color_buf,
-            1 * sizeof(QVector3D)
-            );
-    }
-    // устанавливаем новое выделение
-    if (newIndex != -1)
-    {
-        sPointsBuffer.write(
-            newIndex * sizeof(QVector3D),
-            colorSelect_buf,
-            1 * sizeof(QVector3D)
-            );
-    }
-
-//    QVector<QVector3D> check;
-//    check.resize(50);
-//    sPointsBuffer.read(
-//        0, check.data() ,verticesApprox.size()*sizeof(QVector3D));
-//    qDebug() << "content Buf: " << check;
-
-    sPointsBuffer.release();
-    ApproxVao.release();
+    qDebug() << "setPointSelection";
 }
 
 void OpenglGrid::prepareApproxeDRendering()
 {
-    ApproxeDVao.bind();
-    approxeDBuffer.bind();
-    int n = approx_count;
-    long double shift = (verticesApprox.size()-1)/(long double)fractals;
-    long double t = 0;
-    long double x = 0;
-    long double y = 0;
-    int i = 0;
-    long double t_max = (long double)(verticesApprox.size()-1) + 0.01;
-    Eigen::Vector2d point{0.0,0.0};
-    for(; t <= t_max; i++)
-    {
-        for(int k = 0; k <= n; k++)
-        {
-            long double exp_t = pow(t, k);
-            x += exp_t * S(0, k);
-            y += exp_t * S(1, k);
-        }
-        point.x() = (double)(x);
-        point.y() = (double)(y);
-        approxeDBuffer.write(
-            i*sizeof(Eigen::Vector2d),
-            point.data(),
-            sizeof(Eigen::Vector2d)
-            );
-        t += shift;
-        x = 0;
-        y = 0;
-    }
-    realFractals = i;
-//    QVector<float> check;
-//    check.resize(300);
-//    approxeDBuffer.read(
-//        0, check.data() ,fractals*sizeof(Eigen::Vector2f));
-//    qDebug() << "content Buf: " << check;
-    approxeDBuffer.release();
-    ApproxeDVao.release();
+    qDebug() << "prepareApproxeDRendering";
 }
 
 void OpenglGrid::paintApproxeDRendering()
 {
-    QVector4D color(1.0f, 0.19f, 0.19f, 1.0f);
-
-    programGrid.bind();
-    ApproxeDVao.bind();
-    int matrixLocation = programGrid.uniformLocation("matrix");
-    int colorLocation = programGrid.uniformLocation("color");
-    int depthLocation = programGrid.uniformLocation("depth");
-    programGrid.setUniformValue(matrixLocation, getCoordMatrix());
-    programGrid.setUniformValue(colorLocation, color);
-    programGrid.setUniformValue(depthLocation, 1.0f);
-
-    glLineWidth(GRAPH_LINE_WIDTH);
-
-    glEnable(GL_LINE_SMOOTH);
-    glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
-
-    glDrawArrays(GL_LINE_STRIP, 0, realFractals);
-
-    glDisable(GL_LINE_SMOOTH);
-
-    ApproxeDVao.release();
-    programGrid.release();
+    qDebug() << "paintApproxeDRendering";
 }
 
 void OpenglGrid::paintApproxLineRendering()
@@ -496,28 +395,7 @@ void OpenglGrid::paintApproxLineRendering()
 
 void OpenglGrid::paintApproxPointsRendering()
 {
-    programPoints.bind();
-    sPointsVao.bind();
-    int matrixLocation = programPoints.uniformLocation("matrix");
-    int depthLocation = programGrid.uniformLocation("depth");
-    programPoints.setUniformValue(matrixLocation, getCoordMatrix());
-    programPoints.setUniformValue(depthLocation, 0.0f);
-
-
-    glDisable(GL_DEPTH_TEST);
-    if (verticesApprox.size() > 1)
-    {
-        glPointSize(DEFAULT_POINT_SIZE);
-        glDrawArrays(GL_POINTS, 0, verticesApprox.size());
-    }
-    else {
-        glPointSize(DEFAULT_POINT_SIZE);
-        glDrawArrays(GL_POINTS, 0, verticesApprox.size());
-    }
-    glEnable(GL_DEPTH_TEST);
-
-    sPointsVao.release();
-    programPoints.release();
+    qDebug() << "paintApproxPointsRendering ";
 }
 
 void OpenglGrid::paintGLHelperForAxisLabelsRendering()
@@ -768,77 +646,5 @@ void OpenglGrid::prepareGridPositions()
 
 void OpenglGrid::prepareMNK()
 {
-    // Создаем матрицу
-    Eigen::Matrix<long double, Eigen::Dynamic, 2> U;
-    U.resize(verticesApprox.size(), 2); // Установка размера матрицы
-    for (int i = 0; i < verticesApprox.size(); ++i) {
-        U.row(i) << verticesApprox[i].x(), verticesApprox[i].y();
-    }
-
-    // Динамическая матрица, на этапе компиляции не определено количество элементов
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> Q;
-    int rows = approx_count+1;
-    int cols = verticesApprox.size();
-    Q.resize(rows, cols);
-    for (int j = 0; j < cols; ++j) {
-        Q(0, j) = 1;
-    }
-    for (int j = 0; j < cols; ++j) {
-        Q(1, j) = j;
-    }
-    for (int i = 2; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            Q(i, j) = Q(1,j) * Q(i-1,j);
-        }
-    }
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> FI;
-    rows = sigmaApprox.size();
-    cols = sigmaApprox.size();
-    FI.resize(rows, cols);
-    FI.setZero();
-    for (int i = 0; i < sigmaApprox.size(); i++) {
-        if(sigmaApprox[i] == 0.0f)
-            FI(i,i) = 1000000.0f;
-        else
-            FI(i,i) = pow(sigmaApprox[i],-2);
-    }
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> QT = Q.transpose();
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> FIQT = FI*QT;
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> UT = U.transpose();
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> QFIQT = Q*FIQT;
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> IQFIQT = QFIQT.inverse();
-
-    Eigen::Matrix<
-        long double,
-        Eigen::Dynamic,
-        Eigen::Dynamic> H = FIQT*IQFIQT;
-
-    S = UT * H;
+    qDebug() << "prepareMNK";
 }
