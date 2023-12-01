@@ -41,3 +41,23 @@ const CrossResult cross_sem(
     result.tau = t_tau.y();
     return result;
 }
+
+const QVector3D normalVector(const QVector3D V, const QVector3D W)
+{
+    Eigen::Matrix2d VWxy;
+    Eigen::Matrix2d VWzx;
+    Eigen::Matrix2d VWyz;
+    VWxy(0,0) = V.x(); VWxy(0,1) = V.y();
+    VWxy(1,0) = W.x(); VWxy(1,1) = W.y();
+
+    VWzx(0,0) = V.z(); VWzx(0,1) = V.x();
+    VWzx(1,0) = W.z(); VWzx(1,1) = W.x();
+
+    VWyz(0,0) = V.y(); VWyz(0,1) = V.z();
+    VWyz(1,0) = W.y(); VWyz(1,1) = W.z();
+
+    QVector3D N(VWyz.determinant(),VWzx.determinant(),VWxy.determinant());
+    N.normalize();
+    return N;
+}
+
