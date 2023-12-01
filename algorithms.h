@@ -4,7 +4,14 @@
 #include <QPair>
 #include <QVector2D>
 
-QPair<int,QVector2D> cross_sem(
+struct CrossResult {
+    int flag;
+    QVector2D crossPoint;
+    double t;
+    double tau;
+};
+
+const CrossResult cross_sem(
     const QPair<QVector2D, QVector2D> &ab,
     const QPair<QVector2D, QVector2D> &cd
     );
