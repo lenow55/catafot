@@ -22,4 +22,8 @@ const QVector3D normalVector(
     const QVector3D W
     );
 
+const QVector3D mirrorVector(
+    const QVector3D V,
+    const QVector3D normN);
+
 #endif // ALGORITHMS_H

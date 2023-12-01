@@ -294,7 +294,7 @@ void OpenglGrid::genMirror(int count, float angle, float len)
 
     qDebug() << verticesApprox;
 
-    QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,50));
+    QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,100));
     CrossResult result;
     result = cross_sem(
         QPair<QVector2D,QVector2D>(
@@ -305,6 +305,11 @@ void OpenglGrid::genMirror(int count, float angle, float len)
     QVector3D V(verticesApprox.at(3)-verticesApprox.at(2),0);
     QVector3D W(0,0,1);
     QVector3D n_vec = normalVector(V,W);
+
+    QVector3D rayV = ray.second - ray.first;
+
+    QVector3D M = mirrorVector(rayV, n_vec);
+    qDebug() << "V: " << V << "\n" << "M: " << M;
 
     ApproxVao.bind();
     approxBuffer.bind();

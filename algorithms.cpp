@@ -61,3 +61,10 @@ const QVector3D normalVector(const QVector3D V, const QVector3D W)
     return N;
 }
 
+
+const QVector3D mirrorVector(const QVector3D V, const QVector3D normN)
+{
+    float nu = QVector3D::dotProduct(V, normN);
+    QVector3D M = V - 2*nu*normN;
+    return M;
+}
