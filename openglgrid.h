@@ -16,11 +16,6 @@
 #include <qmath.h>
 
 #include <Eigen/Dense>
-//const unsigned int SCR_WIDTH_OFFSET = 100;
-//const unsigned int SCR_HEIGHT_OFFSET = 100;
-
-const unsigned int SCR_WIDTH = 1000;
-const unsigned int SCR_HEIGHT = 780;
 
 #define MAX_SIG_SLIDER 100
 #define PI 3.14159265
@@ -30,31 +25,26 @@ class OpenglGrid : public QOpenGLWidget, protected QOpenGLFunctions
     Q_OBJECT
 public slots:
     void OnFinishedChildThread();
-    void onNValChanged(int);
-    void onSigValChanged(float);
+    void onAngleChanged(int);
+    void onCountMirrorsChanged(int);
 
 signals:
-    void setSigEnabled(bool enabled);
-    void setNRangeVal(int min, int max, int val);
-    void setSigValue(float val);
 
 public:
     OpenglGrid(QWidget *parent = 0);
     ~OpenglGrid();
 
     QMatrix4x4&		getOrthoProjectionMatrix();
-
     void			setOrthoProjectionMatrix();
+
+    void            setCoordMatrix();
+    QMatrix4x4      &getCoordMatrix();
 
 
 
     void			paintGLHelperForAxisLabelsRendering();
     void            paintGLHelperForGridRendering();
     void            prepareGLForGridRendering();
-
-    void            setCoordMatrix();
-    QMatrix4x4      &getCoordMatrix();
-    void            prepareMNK();
 
 protected:
     void initializeGL() override;
@@ -68,12 +58,10 @@ protected:
 private:
     enum State {
         StartState,
-        LKMAddDeapprox,
-        LKMModifyDeapprox,
-        SelectedDeapprox,
-        ApproxedState,
-        SelectApprox,
-        LKMModifyApprox,
+        LKMAddDeRay,
+        LKMModifyDeRay,
+        RayPlaced,
+        LKMModifyRay,
     };
 
     void                            addApproxPoint(const QVector2D &point);
@@ -87,7 +75,15 @@ private:
     void                            prepareGridPositions();
     void                            initPointsBuffer();
 
-    QRect viewport;
+    void                            XAxisLabelsRendering();
+    void                            PointsLabelsRendering();
+
+    void                            paintApproxLineRendering();
+    void                            prepareApproxeDRendering();
+    void                            paintApproxeDRendering();
+    void                            paintApproxPointsRendering();
+
+    QRect                           viewport;
 
     QMatrix4x4						orthoProjection;
     QMatrix4x4						mirrorModelMatrix;
@@ -99,7 +95,7 @@ private:
 
     QOpenGLShaderProgram			programFont;
     QOpenGLShaderProgram			programGrid;
-    QOpenGLShaderProgram			programPoints;
+    QOpenGLShaderProgram			programMirror;
 
     QThread							threadCons;
 
@@ -116,40 +112,25 @@ private:
     int                             y_tiks;
     int                             x_tiks;
     int                             gridCoordStep;
+    bool                            resised; // надо для перерисовки сетки
 
-    QOpenGLBuffer                   approxBuffer;
-    QOpenGLVertexArrayObject        ApproxVao;
-    QVector<QVector2D>              verticesApprox;
-    QVector<float>                  sigmaApprox;
+    QOpenGLBuffer                   MirrorBuffer;
+    QOpenGLVertexArrayObject        MirrorVao;
+    QVector<QVector2D>              initVerticesMirror; // начальные позиции точек зеркала
+    QVector<QVector2D>              verticesMirror; //повёрнутые и перенесённые позиции зеркала
 
-    QOpenGLBuffer                   sPointsBuffer;
-    QOpenGLVertexArrayObject        sPointsVao;
-//    QVector<int>                    selectedPointsMask;
-    int                             pointSelectIndex;
 
-    QOpenGLBuffer                   approxeDBuffer;
-    QOpenGLVertexArrayObject        ApproxeDVao;
-    Eigen::Matrix<long double,
-                  Eigen::Dynamic,
-                  Eigen::Dynamic>   S;
-    int                             approx_count;
-    int                             fractals;
-    int                             realFractals;
-    bool                            startApprox;
+    QOpenGLBuffer                   RayBuffer;
+    QOpenGLVertexArrayObject        RayVao;
+    QVector<QVector2D>              verticesRay;
+
     bool                            finishedCreatingBuffers;
 
-    int                             moveAccum;
-    State                           state;
+    int                             countMirrors;
+
     QVector2D                       pressedPos;
+    int                             pointSelectIndex;
 
-
-    void                            XAxisLabelsRendering();
-    void                            PointsLabelsRendering();
-
-    void                            paintApproxLineRendering();
-    void                            prepareApproxeDRendering();
-    void                            paintApproxeDRendering();
-    void                            paintApproxPointsRendering();
-    bool                            resised; // надо для перерисовки сетки
+    State                           state;
 };
 #endif // OPENGLGRID_H

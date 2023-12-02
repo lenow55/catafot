@@ -13,32 +13,21 @@ void OpenglGrid::OnFinishedChildThread()
     update();
 }
 
-void OpenglGrid::onNValChanged(int value)
+void OpenglGrid::onAngleChanged(int value)
 {
-    if (state == State::StartState ||
-        state == State::SelectedDeapprox)
-        approx_count = value;
-    if (state == State::ApproxedState ||
-        state == State::SelectApprox)
+    if (state == State::RayPlaced)
     {
-        approx_count = value;
-        prepareMNK();
-        prepareApproxeDRendering();
-        update();
+        qDebug() << "onAngleChanged: " << state;
     }
+    update();
 }
 
-void OpenglGrid::onSigValChanged(float value)
+void OpenglGrid::onCountMirrorsChanged(int value)
 {
-    if (state == State::SelectedDeapprox)
-        if (pointSelectIndex != -1)
-            sigmaApprox.replace(pointSelectIndex, value);
-    if (state == State::SelectApprox)
+    countMirrors = value;
+    if (state == State::RayPlaced)
     {
-        if (pointSelectIndex != -1)
-            sigmaApprox.replace(pointSelectIndex, value);
-        prepareMNK();
-        prepareApproxeDRendering();
+        qDebug() << "onCountMirrorsChanged: " << state;
     }
     update();
 }
@@ -60,12 +49,8 @@ OpenglGrid::OpenglGrid(QWidget *parent)
     finishedLoadingBoldChars = false;
     finishedCreatingBuffers = false;
 
-    fractals = 200;
-    realFractals = fractals;
-    moveAccum = 0;
     state = State::StartState;
-    pointSelectIndex = -1;
-    approx_count = 1;
+    countMirrors = 1;
 }
 
 OpenglGrid::~OpenglGrid()
@@ -119,13 +104,11 @@ void OpenglGrid::initShaders()
     if (!programGrid.link())
         close();
 
-    // if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader_points.glsl"))
+    // if (!programMirror.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader_mirror.glsl"))
     //     close();
-    // //    if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Geometry, ":/shaders/gshader_points.glsl"))
-    // //        close();
-    // if (!programPoints.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader_points.glsl"))
+    // if (!programMirror.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader_mirror.glsl"))
     //     close();
-    // if (!programPoints.link())
+    // if (!programMirror.link())
     //     close();
 }
 
@@ -150,20 +133,20 @@ void OpenglGrid::createBuffers()
     gridVao.release();
 
     // буфер входной линии
-    approxBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    approxBuffer.create();
+    MirrorBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    MirrorBuffer.create();
 
-    ApproxVao.create();
-    ApproxVao.bind();
+    MirrorVao.create();
+    MirrorVao.bind();
 
-    approxBuffer.bind();
-    approxBuffer.allocate(50 * sizeof(QVector2D));
+    MirrorBuffer.bind();
+    MirrorBuffer.allocate(50 * sizeof(QVector2D));
     int vertexLocation = programGrid.attributeLocation("vertex");
     programGrid.enableAttributeArray(vertexLocation);
     programGrid.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 2);
 
-    approxBuffer.release();
-    ApproxVao.release();
+    MirrorBuffer.release();
+    MirrorVao.release();
 
     // буфер маски выделенных точек
     // sPointsBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
@@ -187,22 +170,6 @@ void OpenglGrid::createBuffers()
     // approxBuffer.release();
     // sPointsVao.release();
 //    sPointsVao.release();
-
-    // буфер выходной аппроксимированной линии
-    approxeDBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    approxeDBuffer.create();
-
-    ApproxeDVao.create();
-    ApproxeDVao.bind();
-
-    approxeDBuffer.bind();
-    approxeDBuffer.allocate(2 * fractals * sizeof(Eigen::Vector2d));
-    vertexLocation = programGrid.attributeLocation("vertex");
-    programGrid.enableAttributeArray(vertexLocation);
-    programGrid.setAttributeBuffer(vertexLocation, GL_DOUBLE, 0, 2);
-
-    approxBuffer.release();
-    ApproxeDVao.release();
 }
 
 void OpenglGrid::XAxisLabelsRendering()
@@ -239,23 +206,20 @@ void OpenglGrid::PointsLabelsRendering()
 
 void OpenglGrid::addApproxPoint(const QVector2D &point)
 {
-    ApproxVao.bind();
-    approxBuffer.bind();
+    MirrorVao.bind();
+    MirrorBuffer.bind();
     // добавляем точку в хранилище
 
     QVector<QVector2D> vVector;
     vVector.append(point);
 
-    approxBuffer.write(
-        verticesApprox.size() * sizeof(QVector2D),
+    MirrorBuffer.write(
+        verticesMirror.size() * sizeof(QVector2D),
         vVector.data(),
         1 * sizeof(QVector2D)
         );
 
-    verticesApprox.append(point);
-
-    //устанавливаем начальное значение аномальности для точки
-    sigmaApprox.append(0.00f);
+    verticesMirror.append(point);
 
 //    QVector<float> check;
 //    check.resize(30);
@@ -263,46 +227,46 @@ void OpenglGrid::addApproxPoint(const QVector2D &point)
 //        0, check.data() ,verticesApprox.size()*sizeof(QVector2D));
 //    qDebug() << "content Buf: " << check;
 
-    approxBuffer.release();
-    ApproxVao.release();
+    MirrorBuffer.release();
+    MirrorVao.release();
 }
 
 void OpenglGrid::genMirror(int count, float angle, float len)
 {
-    verticesApprox.append(QVector2D(10.0,10.0));
+    verticesMirror.append(QVector2D(10.0,10.0));
     bool side = true;
     float angle_big = angle * PI / 180.0;
     float angle_smal = (180.0f - angle) * PI / 180.0;
     for(int i = 1; i <= count*2; i++)
     {
         if(side)
-            verticesApprox.append(
+            verticesMirror.append(
                 QVector2D(
-                    len*cos(angle_big)+verticesApprox.at(i-1).x(),
-                    len*sin(angle_big)+verticesApprox.at(i-1).y()
+                    len*cos(angle_big)+verticesMirror.at(i-1).x(),
+                    len*sin(angle_big)+verticesMirror.at(i-1).y()
                     )
                 );
         else
-            verticesApprox.append(
+            verticesMirror.append(
                 QVector2D(
-                    len*cos(angle_smal)+verticesApprox.at(i-1).x(),
-                    len*sin(angle_smal)+verticesApprox.at(i-1).y()
+                    len*cos(angle_smal)+verticesMirror.at(i-1).x(),
+                    len*sin(angle_smal)+verticesMirror.at(i-1).y()
                     )
                 );
         side = side?false:true;
     }
 
-    qDebug() << verticesApprox;
+    qDebug() << verticesMirror;
 
     QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,100));
     CrossResult result;
     result = cross_sem(
         QPair<QVector2D,QVector2D>(
-            verticesApprox.at(2),verticesApprox.at(3)),
+            verticesMirror.at(2),verticesMirror.at(3)),
             ray
         );
 
-    QVector3D V(verticesApprox.at(3)-verticesApprox.at(2),0);
+    QVector3D V(verticesMirror.at(3)-verticesMirror.at(2),0);
     QVector3D W(0,0,1);
     QVector3D n_vec = normalVector(V,W);
 
@@ -311,18 +275,15 @@ void OpenglGrid::genMirror(int count, float angle, float len)
     QVector3D M = mirrorVector(rayV, n_vec);
     qDebug() << "V: " << V << "\n" << "M: " << M;
 
-    ApproxVao.bind();
-    approxBuffer.bind();
+    MirrorVao.bind();
+    MirrorBuffer.bind();
     // добавляем точку в хранилище
 
-    approxBuffer.write(
+    MirrorBuffer.write(
         0,
-        verticesApprox.data(),
-        verticesApprox.size() * sizeof(QVector2D)
+        verticesMirror.data(),
+        verticesMirror.size() * sizeof(QVector2D)
         );
-
-    //устанавливаем начальное значение аномальности для точки
-    // sigmaApprox.append(0.00f);
 
     //    QVector<float> check;
     //    check.resize(30);
@@ -330,24 +291,24 @@ void OpenglGrid::genMirror(int count, float angle, float len)
     //        0, check.data() ,verticesApprox.size()*sizeof(QVector2D));
     //    qDebug() << "content Buf: " << check;
 
-    approxBuffer.release();
-    ApproxVao.release();
+    MirrorBuffer.release();
+    MirrorVao.release();
 }
 
 void OpenglGrid::modifyApproxPoint(const QVector2D &point)
 {
-    ApproxVao.bind();
-    approxBuffer.bind();
+    MirrorVao.bind();
+    MirrorBuffer.bind();
 
     QVector<float> floatVector = {point.x(), point.y()};
 
-    approxBuffer.write(
+    MirrorBuffer.write(
         pointSelectIndex * sizeof(QVector2D),
         floatVector.data(),
         1 * sizeof(QVector2D)
         );
 
-    verticesApprox.replace(pointSelectIndex, point);
+    verticesMirror.replace(pointSelectIndex, point);
 
     //    QVector<float> check;
     //    check.resize(30);
@@ -355,8 +316,8 @@ void OpenglGrid::modifyApproxPoint(const QVector2D &point)
     //        0, check.data() ,verticesApprox.size()*sizeof(QVector2D));
     //    qDebug() << "content Buf: " << check;
 
-    approxBuffer.release();
-    ApproxVao.release();
+    MirrorBuffer.release();
+    MirrorVao.release();
 }
 
 void OpenglGrid::setPointSelection(int newIndex)
@@ -379,7 +340,7 @@ void OpenglGrid::paintApproxLineRendering()
     QVector4D color(0.27f, 0.33f, 1.0f, 1.0f);
 
     programGrid.bind();
-    ApproxVao.bind();
+    MirrorVao.bind();
     int matrixLocation = programGrid.uniformLocation("matrix");
     int colorLocation = programGrid.uniformLocation("color");
     int depthLocation = programGrid.uniformLocation("depth");
@@ -390,15 +351,15 @@ void OpenglGrid::paintApproxLineRendering()
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
 
-    if (verticesApprox.size() > 1)
+    if (verticesMirror.size() > 1)
     {
         glLineWidth(GRAPH_LINE_WIDTH);
-        glDrawArrays(GL_LINE_STRIP, 0, verticesApprox.size());
+        glDrawArrays(GL_LINE_STRIP, 0, verticesMirror.size());
     }
     glDisable(GL_LINE_SMOOTH);
 
 
-    ApproxVao.release();
+    MirrorVao.release();
     programGrid.release();
 }
 
@@ -433,7 +394,6 @@ void OpenglGrid::paintGLHelperForGridRendering()
     programGrid.setUniformValue(matrixLocation, getOrthoProjectionMatrix());
     programGrid.setUniformValue(colorLocation, color);
     programGrid.setUniformValue(depthLocation, 0.0f);
-
 
     glLineWidth(2.0);
     glEnable(GL_LINE_STIPPLE);
@@ -546,9 +506,8 @@ void OpenglGrid::paintGL()
 
     paintGLHelperForGridRendering();
     paintApproxLineRendering();
-    if (state == State::SelectApprox ||
-        state == State::ApproxedState ||
-        state == State::LKMModifyApprox
+    if (state == State::RayPlaced ||
+        state == State::LKMModifyRay
         )
         paintApproxeDRendering();
 
@@ -556,7 +515,6 @@ void OpenglGrid::paintGL()
     if(finishedLoadingBoldChars)
     {
         XAxisLabelsRendering();
-        // PointsLabelsRendering();
     }
 //    qDebug() << state;
 }
@@ -612,8 +570,8 @@ void OpenglGrid::mouseReleaseEvent(QMouseEvent *event)
 //то -1 ставит
 int OpenglGrid::checkPointSelected(const QVector2D &position)
 {
-    QVector<QVector2D>::iterator itBegin = verticesApprox.begin();
-    QVector<QVector2D>::iterator itEnd = verticesApprox.end();
+    QVector<QVector2D>::iterator itBegin = verticesMirror.begin();
+    QVector<QVector2D>::iterator itEnd = verticesMirror.end();
 
     int newSelectionIndex = -1;
     // Цикл с использованием итераторов
@@ -651,9 +609,4 @@ void OpenglGrid::prepareGridPositions()
                    gridOffset.x()+gridStep.x()*i,
                    screenDimension.y());
     }
-}
-
-void OpenglGrid::prepareMNK()
-{
-    qDebug() << "prepareMNK";
 }
