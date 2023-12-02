@@ -18,14 +18,17 @@ private:
     int sig_scale;
 
 signals:
-    void nChanged(int);
-    void sigChanged(float);
+    void countChanged(int);
+    void rotateChanged(int);
+    void angleChanged(int);
 
 public slots:
-    void onNSliderChange(int);
-    void onSigSliderChange(int);
-    void setSigSlider(float);
-    void setNSliderRangeLabel(int,int,int);
+    void onCountSliderMoved(int);
+    void onRotateSliderMoved(int);
+    void onAngleSliderMoved(int);
+    // void onCountSliderChange(int);
+    // void onRotateSliderChange(int);
+    // void onAngleSliderChange(int);
 };
 
 #endif // MAINWINDOW_H

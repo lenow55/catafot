@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1030</width>
-    <height>644</height>
+    <width>980</width>
+    <height>645</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -61,7 +61,7 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QLabel" name="n_label">
+          <widget class="QLabel" name="count_label">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -80,10 +80,10 @@
             </font>
            </property>
            <property name="text">
-            <string>N: 0</string>
+            <string>Count: 1</string>
            </property>
           </widget>
-          <widget class="QSlider" name="n_Slider">
+          <widget class="QSlider" name="count_Slider">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -102,19 +102,19 @@
             </font>
            </property>
            <property name="minimum">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="maximum">
-            <number>0</number>
+            <number>5</number>
            </property>
            <property name="pageStep">
             <number>1</number>
            </property>
            <property name="value">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="sliderPosition">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -136,14 +136,20 @@
          <enum>QLayout::SetDefaultConstraint</enum>
         </property>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0">
+          <property name="spacing">
+           <number>4</number>
+          </property>
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
           <property name="rightMargin">
-           <number>50</number>
+           <number>0</number>
           </property>
           <item>
-           <widget class="QSlider" name="sig_Slider">
+           <widget class="QSlider" name="rot_Slider">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -153,7 +159,7 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>70</width>
+              <width>55</width>
               <height>10</height>
              </size>
             </property>
@@ -161,10 +167,10 @@
              <bool>false</bool>
             </property>
             <property name="minimum">
-             <number>0</number>
+             <number>-90</number>
             </property>
             <property name="maximum">
-             <number>100</number>
+             <number>90</number>
             </property>
             <property name="pageStep">
              <number>1</number>
@@ -181,10 +187,13 @@
             <property name="tickPosition">
              <enum>QSlider::TicksAbove</enum>
             </property>
+            <property name="tickInterval">
+             <number>30</number>
+            </property>
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="sig_label">
+           <widget class="QLabel" name="rot_label">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -193,7 +202,7 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>108</width>
+              <width>50</width>
               <height>0</height>
              </size>
             </property>
@@ -203,7 +212,85 @@
              </font>
             </property>
             <property name="text">
-             <string>Sig: 0</string>
+             <string>Rot:
+0</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="angle_Slider">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>55</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>15</number>
+            </property>
+            <property name="maximum">
+             <number>180</number>
+            </property>
+            <property name="pageStep">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>90</number>
+            </property>
+            <property name="sliderPosition">
+             <number>90</number>
+            </property>
+            <property name="tracking">
+             <bool>false</bool>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="invertedControls">
+             <bool>false</bool>
+            </property>
+            <property name="tickPosition">
+             <enum>QSlider::TicksAbove</enum>
+            </property>
+            <property name="tickInterval">
+             <number>30</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="angle_label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Angle:
+90</string>
             </property>
            </widget>
           </item>
@@ -219,7 +306,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>300</width>
+            <width>250</width>
             <height>0</height>
            </size>
           </property>
@@ -229,7 +316,7 @@
            </font>
           </property>
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:700;&quot;&gt;ЛКМ:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Щелчок: поставить точку&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Выделить точку и перетащить&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:700;&quot;&gt;ПКМ:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Выполнить аппроксимацию&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;(добавлять новые точки нельзя)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:700;&quot;&gt;СКМ:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Очистить холст&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;N: степень полинома&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Sig: погрешность измерения&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;для точки&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:700;&quot;&gt;ЛКМ:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Щелчок: поставить точку&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Выделить точку и перетащить&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:700;&quot;&gt;СКМ:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Очистить луч&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Angle: угол раствора зеркал&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Rot: угол поворота зеркал&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Count: количество зеркал&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="scaledContents">
            <bool>false</bool>
@@ -256,7 +343,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1030</width>
+     <width>980</width>
      <height>22</height>
     </rect>
    </property>

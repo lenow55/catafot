@@ -9,67 +9,54 @@ MainWindow::MainWindow(QWidget *parent)
 
 {
     ui->setupUi(this);
-    // connect(
-    //     ui->n_Slider,
-    //     SIGNAL(sliderMoved(int)),
-    //     this,
-    //     SLOT(onNSliderChange(int)));
+    connect(
+        ui->rot_Slider,
+        SIGNAL(sliderMoved(int)),
+        this,
+        SLOT(onRotateSliderMoved(int)));
     // connect(
     //     this,
     //     SIGNAL(nChanged(int)),
     //     ui->openGLWidget,
     //     SLOT(onNValChanged(int)));
-    // connect(
-    //     ui->openGLWidget,
-    //     SIGNAL(setNRangeVal(int,int,int)),
-    //     this,
-    //     SLOT(setNSliderRangeLabel(int,int,int)));
 
-    // connect(
-    //     ui->openGLWidget,
-    //     SIGNAL(setSigEnabled(bool)),
-    //     ui->sig_Slider,
-    //     SLOT(setEnabled(bool)));
-    // connect(
-    //     ui->sig_Slider,
-    //     SIGNAL(sliderMoved(int)),
-    //     this,
-    //     SLOT(onSigSliderChange(int)));
+    connect(
+        ui->angle_Slider,
+        SIGNAL(sliderMoved(int)),
+        this,
+        SLOT(onAngleSliderMoved(int)));
     // connect(
     //     this,
     //     SIGNAL(sigChanged(float)),
     //     ui->openGLWidget,
     //     SLOT(onSigValChanged(float)));
+
+    connect(
+        ui->count_Slider,
+        SIGNAL(sliderMoved(int)),
+        this,
+        SLOT(onCountSliderMoved(int)));
     // connect(
-    //     ui->openGLWidget,
-    //     SIGNAL(setSigValue(float)),
     //     this,
-    //     SLOT(setSigSlider(float)));
+    //     SIGNAL(sigChanged(float)),
+    //     ui->openGLWidget,
+    //     SLOT(onSigValChanged(float)));
 }
 
-void MainWindow::onNSliderChange(int sliderValue)
+void MainWindow::onCountSliderMoved(int sliderValue)
 {
-    ui->n_label->setText(QString("N: %1").arg(sliderValue));
-    emit nChanged(sliderValue);
+    ui->count_label->setText(QString("Count: %1").arg(sliderValue));
+    emit countChanged(sliderValue);
 }
 
-void MainWindow::onSigSliderChange(int sliderValue)
+void MainWindow::onRotateSliderMoved(int sliderValue)
 {
-    float normalValue = (float)sliderValue/sig_scale;
-    ui->sig_label->setText(QString("Sig: %1").arg(normalValue));
-    emit sigChanged(normalValue);
+    ui->rot_label->setText(QString("Rot:\n%1").arg(sliderValue));
+    emit rotateChanged(sliderValue);
 }
 
-void MainWindow::setSigSlider(float normalValue)
+void MainWindow::onAngleSliderMoved(int sliderValue)
 {
-    int scaledValue = (int)(normalValue*sig_scale);
-    ui->sig_label->setText(QString("Sig: %1").arg(normalValue));
-    ui->sig_Slider->setValue(scaledValue);
-}
-
-void MainWindow::setNSliderRangeLabel(int min, int max, int value)
-{
-    ui->n_label->setText(QString("N: %1").arg(value));
-    ui->n_Slider->setValue(value);
-    ui->n_Slider->setRange(min,max);
+    ui->angle_label->setText(QString("Angle:\n%1").arg(sliderValue));
+    emit rotateChanged(sliderValue);
 }
