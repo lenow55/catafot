@@ -15,20 +15,20 @@ void OpenglGrid::OnFinishedChildThread()
 
 void OpenglGrid::onAngleChanged(int value)
 {
-    if (state == State::RayPlaced)
-    {
-        qDebug() << "onAngleChanged: " << state;
-    }
+    qDebug() << "onAngleChanged: " << state;
+    update();
+}
+
+void OpenglGrid::onRotateChanged(int value)
+{
+    qDebug() << "onRotateChanged: " << state;
     update();
 }
 
 void OpenglGrid::onCountMirrorsChanged(int value)
 {
     countMirrors = value;
-    if (state == State::RayPlaced)
-    {
-        qDebug() << "onCountMirrorsChanged: " << state;
-    }
+    qDebug() << "onCountMirrorsChanged: " << state;
     update();
 }
 
