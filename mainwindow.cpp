@@ -5,7 +5,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow{parent}
     , ui(new Ui::MainWindow)
-    , sig_scale(100)
+    , len_scale(10)
 
 {
     ui->setupUi(this);
@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
         SLOT(onAngleChanged(int)));
 
     connect(
-        ui->count_Slider,
+        ui->countSlider,
         SIGNAL(sliderMoved(int)),
         this,
         SLOT(onCountSliderMoved(int)));
@@ -41,11 +41,22 @@ MainWindow::MainWindow(QWidget *parent)
         SIGNAL(countChanged(int)),
         ui->openGLWidget,
         SLOT(onCountMirrorsChanged(int)));
+
+    connect(
+        ui->lenSlider,
+        SIGNAL(sliderMoved(int)),
+        this,
+        SLOT(onLenSliderMoved(int)));
+    connect(
+        this,
+        SIGNAL(lenChanged(int)),
+        ui->openGLWidget,
+        SLOT(onLenChanged(int)));
 }
 
 void MainWindow::onCountSliderMoved(int sliderValue)
 {
-    ui->count_label->setText(QString("Count: %1").arg(sliderValue));
+    ui->countLabel->setText(QString("Count: %1").arg(sliderValue));
     emit countChanged(sliderValue);
 }
 
@@ -59,4 +70,11 @@ void MainWindow::onAngleSliderMoved(int sliderValue)
 {
     ui->angle_label->setText(QString("Angle:\n%1").arg(sliderValue));
     emit angleChanged(sliderValue);
+}
+
+void MainWindow::onLenSliderMoved(int sliderValue)
+{
+    int value = sliderValue*len_scale;
+    ui->lenlabel->setText(QString("Len: %1").arg(sliderValue));
+    emit lenChanged(value);
 }

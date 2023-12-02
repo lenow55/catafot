@@ -32,6 +32,12 @@ void OpenglGrid::onCountMirrorsChanged(int value)
     update();
 }
 
+void OpenglGrid::onLenChanged(int value)
+{
+    qDebug() << "onLenChanged: " << state;
+    update();
+}
+
 OpenglGrid::OpenglGrid(QWidget *parent)
     : QOpenGLWidget(parent), x_tiks(0), y_tiks(0), gridCoordStep(10)
 {

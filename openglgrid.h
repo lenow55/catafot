@@ -28,6 +28,7 @@ public slots:
     void onAngleChanged(int);
     void onRotateChanged(int);
     void onCountMirrorsChanged(int);
+    void onLenChanged(int);
 
 signals:
 
