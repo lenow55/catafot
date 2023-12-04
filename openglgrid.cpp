@@ -260,7 +260,6 @@ void OpenglGrid::modifyRayPoint(const QVector2D &point)
 
 void OpenglGrid::prepareRayRendering()
 {
-    qDebug() << "prepareRayRendering";
     if(verticesRay.size() < 2)
         return;
 
@@ -272,50 +271,70 @@ void OpenglGrid::prepareRayRendering()
     // Удаление элементов с определенного индекса до конца
     verticesRay.erase(verticesRay.begin() + startIndex, verticesRay.end());
 
-    QPair<QVector2D,QVector2D> ray(verticesRay.at(0),verticesRay.at(1));
-
     int countMirrors = verticesMirror.size()-1;
     CrossResult crossResult;
     CrossResult nearestCrossResult;
-    nearestCrossResult.tau=10000;
-    nearestCrossResult.t=10000;
+    int mirrorIndex = -1;
+    int lastReflectedMirror = -1;
+    bool itFirstReflection = true;
+    QPair<QVector2D,QVector2D> ray(
+        verticesRay.at(0),
+        verticesRay.at(1));
+    QVector2D lastRay(ray.second-ray.first);
     while(findingReflection)
     {
         nearestCrossResult.flag = -1;
+        nearestCrossResult.tau=10000;
+        nearestCrossResult.t=10000;
+        mirrorIndex = -1;
         for(int i = 0; i < countMirrors; i++)
         {
+            // если это зеркало было на пред итерации, то пропускаем его
+            if(lastReflectedMirror == i)
+                continue;
             crossResult = cross_sem(
                 QPair<QVector2D,QVector2D>(
                     verticesMirror.at(i),verticesMirror.at(i+1)),
                     ray
                 );
             if(crossResult.flag > 1 && crossResult.tau < nearestCrossResult.tau && crossResult.tau>0)
+            {
                 nearestCrossResult=crossResult;
+                mirrorIndex=i;
+            }
         }
         if(nearestCrossResult.flag < 2)
         {
-            QVector2D lastRay(verticesRay.at(1)-verticesRay.at(0));
             lastRay.normalize();
-            verticesRay.append(lastRay*2000+verticesRay.at(0));
+            if(itFirstReflection)
+                verticesRay.append(lastRay*2000+verticesRay.at(0));
+            else
+                verticesRay.append(lastRay*2000+nearestCrossResult.crossPoint);
             findingReflection=false;
         }
         else
         {
-            QVector2D lastRay(verticesRay.at(1)-verticesRay.at(0));
-            // lastRay.normalize();
-            verticesRay.append(lastRay*nearestCrossResult.tau+verticesRay.at(0));
-            findingReflection=false;
+            if(itFirstReflection && nearestCrossResult.tau < 1)
+                break;
+            else
+                itFirstReflection=false;
+            lastReflectedMirror=mirrorIndex;
+            verticesRay.append(nearestCrossResult.crossPoint);
+            QVector3D V(
+                verticesMirror.at(mirrorIndex+1)-verticesMirror.at(mirrorIndex),
+                0);
+            QVector3D rayV(lastRay,0);
+            QVector3D W(0,0,1);
+            QVector3D n_vec = normalVector(V,W);
+            QVector3D M = mirrorVector(rayV, n_vec);
+            QVector2D M2d(M);
+            ray.first=nearestCrossResult.crossPoint;
+            ray.second=nearestCrossResult.crossPoint+M2d;
+            lastRay=M2d;
         }
     }
 
-    QVector3D V(verticesMirror.at(3)-verticesMirror.at(2),0);
-    QVector3D W(0,0,1);
-    QVector3D n_vec = normalVector(V,W);
-
-    // QVector3D rayV = ray.second - ray.first;
-
-    // QVector3D M = mirrorVector(rayV, n_vec);
-    // qDebug() << "V: " << V << "\n" << "M: " << M;
+    // qDebug() << "V: " << verticesRay;
     RayVao.bind();
     RayBuffer.bind();
 
