@@ -169,10 +169,10 @@
              </font>
             </property>
             <property name="minimum">
-             <number>1</number>
+             <number>5</number>
             </property>
             <property name="maximum">
-             <number>20</number>
+             <number>25</number>
             </property>
             <property name="pageStep">
              <number>1</number>

@@ -15,26 +15,37 @@ void OpenglGrid::OnFinishedChildThread()
 
 void OpenglGrid::onAngleChanged(int value)
 {
-    qDebug() << "onAngleChanged: " << state;
+    angleMirrors = float(value)/2;
+    verticesMirror.clear();
+    genMirror(countMirrors, angleMirrors, lenMirror);
+    prepareRayRendering();
     update();
 }
 
 void OpenglGrid::onRotateChanged(int value)
 {
-    qDebug() << "onRotateChanged: " << state;
+    rotateMirrors = value;
+    verticesMirror.clear();
+    genMirror(countMirrors, angleMirrors, lenMirror);
+    prepareRayRendering();
     update();
 }
 
 void OpenglGrid::onCountMirrorsChanged(int value)
 {
     countMirrors = value;
-    qDebug() << "onCountMirrorsChanged: " << state;
+    verticesMirror.clear();
+    genMirror(countMirrors, angleMirrors, lenMirror);
+    prepareRayRendering();
     update();
 }
 
 void OpenglGrid::onLenChanged(int value)
 {
-    qDebug() << "onLenChanged: " << state;
+    lenMirror = value;
+    verticesMirror.clear();
+    genMirror(countMirrors, angleMirrors, lenMirror);
+    prepareRayRendering();
     update();
 }
 
@@ -52,6 +63,9 @@ OpenglGrid::OpenglGrid(QWidget *parent)
 
     state = State::StartState;
     countMirrors = 1;
+    lenMirror = 100;
+    angleMirrors = 45;
+    rotateMirrors = 0;
 }
 
 OpenglGrid::~OpenglGrid()
@@ -188,8 +202,8 @@ void OpenglGrid::addRayPoint(const QVector2D &point)
 
 void OpenglGrid::genMirror(int count, float angle, float len)
 {
-    verticesMirror.append(QVector2D(10.0,10.0));
-    bool side = true;
+    verticesMirror.append(QVector2D(0.0,0.0));
+    bool side = false;
     float angle_big = angle * PI / 180.0;
     float angle_smal = (180.0f - angle) * PI / 180.0;
     for(int i = 1; i <= count*2; i++)
@@ -209,6 +223,31 @@ void OpenglGrid::genMirror(int count, float angle, float len)
                     )
                 );
         side = side?false:true;
+    }
+
+    QMatrix translationCenterMatrix;
+    translationCenterMatrix.translate(
+        -(verticesMirror.at(count*2-1).x()/2),
+        -(verticesMirror.at(count*2).y()/2)
+        );
+
+    QMatrix rotationMatrix;
+    rotationMatrix.rotate(rotateMirrors);
+
+    QMatrix translationPlaceMatrix;
+    translationPlaceMatrix.translate(
+        200,
+        400
+        );
+
+    QPointF tempPointF;
+    // Применяем трансляцию и поворот к каждой точке
+    for (QVector2D &point : verticesMirror) {
+        tempPointF = translationCenterMatrix.map(point.toPointF());
+        tempPointF = rotationMatrix.map(tempPointF);
+        tempPointF = translationPlaceMatrix.map(tempPointF);
+        point.setX(tempPointF.x());
+        point.setY(tempPointF.y());
     }
 
     // qDebug() << verticesMirror;
@@ -492,7 +531,7 @@ void OpenglGrid::paintGL()
         checkFirstFrameTimeElapsed = true;
         qDebug() << "Total load Time for First painGL call" << loadTime << "\n";
         createBuffers();
-        genMirror(5, 5.0f, 300.0f);
+        genMirror(countMirrors, angleMirrors, lenMirror);
     }
     if (resised)
     {

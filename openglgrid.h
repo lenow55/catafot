@@ -120,6 +120,9 @@ private:
     bool                            finishedCreatingBuffers;
 
     int                             countMirrors;
+    float                           angleMirrors;
+    float                           rotateMirrors;
+    int                             lenMirror;
 
     QVector2D                       pressedPos;
     int                             pointSelectIndex;
