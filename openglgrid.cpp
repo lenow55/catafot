@@ -492,7 +492,7 @@ void OpenglGrid::paintGL()
         checkFirstFrameTimeElapsed = true;
         qDebug() << "Total load Time for First painGL call" << loadTime << "\n";
         createBuffers();
-        genMirror(5, 45.0f, 50.0f);
+        genMirror(5, 5.0f, 300.0f);
     }
     if (resised)
     {
