@@ -4,7 +4,7 @@
 #include "algorithms.h"
 
 #define DEFAULT_POINT_SIZE          14.0
-#define GRAPH_LINE_WIDTH            4.0
+#define GRAPH_LINE_WIDTH            3.0
 
 void OpenglGrid::OnFinishedChildThread()
 {
@@ -41,11 +41,6 @@ void OpenglGrid::onLenChanged(int value)
 OpenglGrid::OpenglGrid(QWidget *parent)
     : QOpenGLWidget(parent), x_tiks(0), y_tiks(0), gridCoordStep(10)
 {
-    //  setAttribute(Qt::WA_TranslucentBackground); // делает виджет прозрачным прям
-//    setFixedSize(SCR_WIDTH, SCR_HEIGHT);
-
-//    screenDimension.setX(SCR_WIDTH);
-//    screenDimension.setY(SCR_HEIGHT);
     gridOffset.setX(50.0f);
     gridOffset.setY(50.0f);
     gridStep.setX(100.0f);
@@ -109,13 +104,6 @@ void OpenglGrid::initShaders()
         close();
     if (!programGrid.link())
         close();
-
-    // if (!programMirror.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader_mirror.glsl"))
-    //     close();
-    // if (!programMirror.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader_mirror.glsl"))
-    //     close();
-    // if (!programMirror.link())
-    //     close();
 }
 
 void OpenglGrid::createBuffers()
@@ -138,7 +126,7 @@ void OpenglGrid::createBuffers()
     gridBuffer.release();
     gridVao.release();
 
-    // буфер входной линии
+    // буфер зеркала
     MirrorBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
     MirrorBuffer.create();
 
@@ -147,85 +135,46 @@ void OpenglGrid::createBuffers()
 
     MirrorBuffer.bind();
     MirrorBuffer.allocate(50 * sizeof(QVector2D));
-    int vertexLocation = programGrid.attributeLocation("vertex");
-    programGrid.enableAttributeArray(vertexLocation);
-    programGrid.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 2);
+    int mirrorVertexLocation = programGrid.attributeLocation("vertex");
+    programGrid.enableAttributeArray(mirrorVertexLocation);
+    programGrid.setAttributeBuffer(mirrorVertexLocation, GL_FLOAT, 0, 2);
 
     MirrorBuffer.release();
     MirrorVao.release();
 
-    // буфер маски выделенных точек
-    // sPointsBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    // sPointsBuffer.create();
+    // буфер луча
+    RayBuffer.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    RayBuffer.create();
 
-    // sPointsVao.create();
-    // sPointsVao.bind();
+    RayVao.create();
+    RayVao.bind();
 
-    // sPointsBuffer.bind();
-    // sPointsBuffer.allocate(50 * sizeof(QVector3D));
-    // int colorLocation = programPoints.attributeLocation("color");
-    // programPoints.enableAttributeArray(colorLocation);
-    // programPoints.setAttributeBuffer(colorLocation, GL_FLOAT, 0, 3);
+    RayBuffer.bind();
+    RayBuffer.allocate(100 * sizeof(QVector2D));
+    int rayVertexLocation = programGrid.attributeLocation("vertex");
+    programGrid.enableAttributeArray(rayVertexLocation);
+    programGrid.setAttributeBuffer(rayVertexLocation, GL_FLOAT, 0, 2);
 
-    // approxBuffer.bind();
-    // vertexLocation = programPoints.attributeLocation("vertex");
-    // programPoints.enableAttributeArray(vertexLocation);
-    // programPoints.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 2);
-
-    // sPointsBuffer.release();
-    // approxBuffer.release();
-    // sPointsVao.release();
-//    sPointsVao.release();
+    RayBuffer.release();
+    RayVao.release();
 }
 
-void OpenglGrid::XAxisLabelsRendering()
+void OpenglGrid::addRayPoint(const QVector2D &point)
 {
-    QVector3D fontColor(1.0f, 0.3f, 0.3f);
-    programFont.bind();
-    programFont.setUniformValue("mvp_matrix", getOrthoProjectionMatrix());
-    programFont.setUniformValue("textColor", fontColor);
-    programFont.setUniformValue("text", 0);
-    for(int count = 0; count <= x_tiks; count++)
-    {
-        QString x_label = QString::number(count*gridCoordStep);
-        fpObj->drawFontGeometry(
-            &programFont,
-            gridStep.x()*count+gridOffset.x(), 25.0f,
-            x_label, 0.6f);
-    }
-    for(int count = 0; count <= y_tiks; count++)
-    {
-        QString x_label = QString::number(count*gridCoordStep);
-        fpObj->drawFontLeftGeometry(
-            &programFont,
-            30.0f,
-            gridStep.y()*count+gridOffset.y(),
-            x_label, 0.6f);
-    }
-    programFont.release();
-}
-
-void OpenglGrid::PointsLabelsRendering()
-{
-    qDebug() << "PointsLabelsRendering";
-}
-
-void OpenglGrid::addApproxPoint(const QVector2D &point)
-{
-    MirrorVao.bind();
-    MirrorBuffer.bind();
+    RayVao.bind();
+    RayBuffer.bind();
     // добавляем точку в хранилище
 
     QVector<QVector2D> vVector;
     vVector.append(point);
 
-    MirrorBuffer.write(
-        verticesMirror.size() * sizeof(QVector2D),
+    RayBuffer.write(
+        verticesRay.size() * sizeof(QVector2D),
         vVector.data(),
         1 * sizeof(QVector2D)
         );
 
-    verticesMirror.append(point);
+    verticesRay.append(point);
 
 //    QVector<float> check;
 //    check.resize(30);
@@ -233,8 +182,8 @@ void OpenglGrid::addApproxPoint(const QVector2D &point)
 //        0, check.data() ,verticesApprox.size()*sizeof(QVector2D));
 //    qDebug() << "content Buf: " << check;
 
-    MirrorBuffer.release();
-    MirrorVao.release();
+    RayBuffer.release();
+    RayVao.release();
 }
 
 void OpenglGrid::genMirror(int count, float angle, float len)
@@ -262,24 +211,24 @@ void OpenglGrid::genMirror(int count, float angle, float len)
         side = side?false:true;
     }
 
-    qDebug() << verticesMirror;
+    // qDebug() << verticesMirror;
 
-    QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,100));
-    CrossResult result;
-    result = cross_sem(
-        QPair<QVector2D,QVector2D>(
-            verticesMirror.at(2),verticesMirror.at(3)),
-            ray
-        );
+    // QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,100));
+    // CrossResult result;
+    // result = cross_sem(
+    //     QPair<QVector2D,QVector2D>(
+    //         verticesMirror.at(2),verticesMirror.at(3)),
+    //         ray
+    //     );
 
-    QVector3D V(verticesMirror.at(3)-verticesMirror.at(2),0);
-    QVector3D W(0,0,1);
-    QVector3D n_vec = normalVector(V,W);
+    // QVector3D V(verticesMirror.at(3)-verticesMirror.at(2),0);
+    // QVector3D W(0,0,1);
+    // QVector3D n_vec = normalVector(V,W);
 
-    QVector3D rayV = ray.second - ray.first;
+    // QVector3D rayV = ray.second - ray.first;
 
-    QVector3D M = mirrorVector(rayV, n_vec);
-    qDebug() << "V: " << V << "\n" << "M: " << M;
+    // QVector3D M = mirrorVector(rayV, n_vec);
+    // qDebug() << "V: " << V << "\n" << "M: " << M;
 
     MirrorVao.bind();
     MirrorBuffer.bind();
@@ -301,10 +250,10 @@ void OpenglGrid::genMirror(int count, float angle, float len)
     MirrorVao.release();
 }
 
-void OpenglGrid::modifyApproxPoint(const QVector2D &point)
+void OpenglGrid::modifyRayPoint(const QVector2D &point)
 {
-    MirrorVao.bind();
-    MirrorBuffer.bind();
+    RayVao.bind();
+    RayBuffer.bind();
 
     QVector<float> floatVector = {point.x(), point.y()};
 
@@ -326,22 +275,48 @@ void OpenglGrid::modifyApproxPoint(const QVector2D &point)
     MirrorVao.release();
 }
 
-void OpenglGrid::setPointSelection(int newIndex)
-{
-    qDebug() << "setPointSelection";
-}
-
 void OpenglGrid::prepareApproxeDRendering()
 {
     qDebug() << "prepareApproxeDRendering";
 }
 
-void OpenglGrid::paintApproxeDRendering()
+void OpenglGrid::paintRayRendering()
 {
-    qDebug() << "paintApproxeDRendering";
+    QVector4D color(1.0f, 0.19f, 0.19f, 1.0f);
+
+    programGrid.bind();
+    RayVao.bind();
+    int matrixLocation = programGrid.uniformLocation("matrix");
+    int colorLocation = programGrid.uniformLocation("color");
+    int depthLocation = programGrid.uniformLocation("depth");
+    programGrid.setUniformValue(matrixLocation, getCoordMatrix());
+    programGrid.setUniformValue(colorLocation, color);
+    programGrid.setUniformValue(depthLocation, 1.0f);
+
+    glLineWidth(GRAPH_LINE_WIDTH);
+
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
+    if (verticesRay.size() > 1)
+    {
+        glDrawArrays(GL_LINE_STRIP, 0, verticesRay.size());
+    }
+
+    glDisable(GL_LINE_SMOOTH);
+
+    glDisable(GL_DEPTH_TEST);
+    glPointSize(DEFAULT_POINT_SIZE);
+    if (verticesRay.size() < 2)
+        glDrawArrays(GL_POINTS, 0, verticesRay.size());
+    else
+        glDrawArrays(GL_POINTS, 0, 2);
+    glEnable(GL_DEPTH_TEST);
+
+    RayVao.release();
+    programGrid.release();
 }
 
-void OpenglGrid::paintApproxLineRendering()
+void OpenglGrid::paintMirrorRendering()
 {
     QVector4D color(0.27f, 0.33f, 1.0f, 1.0f);
 
@@ -365,66 +340,9 @@ void OpenglGrid::paintApproxLineRendering()
     glDisable(GL_LINE_SMOOTH);
 
 
+
     MirrorVao.release();
     programGrid.release();
-}
-
-void OpenglGrid::paintApproxPointsRendering()
-{
-    qDebug() << "paintApproxPointsRendering ";
-}
-
-void OpenglGrid::paintGLHelperForAxisLabelsRendering()
-{
-    QVector3D fontColor(1.0f, 0.3f, 0.3f);
-    programFont.bind();
-    programFont.setUniformValue("mvp_matrix", getOrthoProjectionMatrix());
-    programFont.setUniformValue("textColor", fontColor);
-    programFont.setUniformValue("text", 0);
-
-    QString stringToDisplay = QString::fromUtf8("0");
-    fpObj->drawFontGeometry(&programFont,50.0f, 25.0f, stringToDisplay, 0.6f);
-    fpObj->drawFontGeometry(&programFont,30.0f, 50.0f, stringToDisplay, 0.6f);
-    programFont.release();
-}
-
-void OpenglGrid::paintGLHelperForGridRendering()
-{
-    QVector4D color(0.35f, 0.35f, 0.35f, 1.0f);
-
-    programGrid.bind();
-    gridVao.bind();
-    int matrixLocation = programGrid.uniformLocation("matrix");
-    int colorLocation = programGrid.uniformLocation("color");
-    int depthLocation = programGrid.uniformLocation("depth");
-    programGrid.setUniformValue(matrixLocation, getOrthoProjectionMatrix());
-    programGrid.setUniformValue(colorLocation, color);
-    programGrid.setUniformValue(depthLocation, 0.0f);
-
-    glLineWidth(2.0);
-    glEnable(GL_LINE_STIPPLE);
-    glLineStipple(5, 0x9999);
-    glDrawArrays(GL_LINES, 0, verticesGrid.size());
-    glDisable(GL_LINE_STIPPLE);
-
-    gridVao.release();
-    programGrid.release();
-}
-
-void OpenglGrid::prepareGLForGridRendering()
-{
-    gridVao.bind();
-    gridBuffer.bind();
-
-    gridBuffer.write(0, verticesGrid.constData(), verticesGrid.size() * sizeof(QVector2D));
-
-//    QVector<float> check;
-//    check.resize(300);
-//    gridBuffer.read(
-//        0, check.data() ,verticesGrid.size()*sizeof(QVector2D));
-//    qDebug() << "content Buf: " << check;
-    gridBuffer.release();
-    gridVao.release();
 }
 
 void OpenglGrid::initializeGL()
@@ -467,7 +385,6 @@ void OpenglGrid::initializeGL()
 
     // the worker can finally start
     fpObj->start();
-
 }
 
 void OpenglGrid::resizeGL(int w, int h)
@@ -511,13 +428,13 @@ void OpenglGrid::paintGL()
 
 
     paintGLHelperForGridRendering();
-    paintApproxLineRendering();
+    paintMirrorRendering();
     if (state == State::RayPlaced ||
         state == State::LKMModifyRay
         )
-        paintApproxeDRendering();
+        paintRayRendering();
 
-    // paintApproxPointsRendering();
+    paintRayRendering();
     if(finishedLoadingBoldChars)
     {
         XAxisLabelsRendering();
@@ -565,54 +482,83 @@ void OpenglGrid::mousePressEvent(QMouseEvent *event)
         qDebug() << "plot_data->inverse_data_matrix * position"
                  << pressedPos;
     }
+    if (
+        state == State::StartState)
+    {
+        int newSelectIndex = checkPointSelected(pressedPos,2);
+        if (newSelectIndex == -1)
+        {
+            addRayPoint(pressedPos);
+            if (verticesRay.size() < 2)
+            {
+                state = State::LKMAddDeRay;
+            }
+            else
+            {
+                pointSelectIndex = 1;
+                state = State::LKMModifyRay;
+            }
+            update();
+        }
+        else
+        {
+            pointSelectIndex = newSelectIndex;
+            state = State::LKMModifyDeRay;
+        }
+    }
+    if (
+        state == State::RayPlaced)
+    {
+        int newSelectIndex = checkPointSelected(pressedPos,2);
+        if (newSelectIndex == -1)
+        {
+            pointSelectIndex = newSelectIndex;
+            state = State::LKMModifyRay;
+        }
+    }
+
+    QOpenGLWidget::mousePressEvent(event);
 }
 
 void OpenglGrid::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::LeftButton) {
+        if (
+            state == State::LKMAddDeRay ||
+            state == State::LKMModifyDeRay
+            )
+            state = State::StartState;
+        if (
+            state == State::LKMModifyRay
+            )
+            state = State::RayPlaced;
+        pointSelectIndex = -1;
+
+    }
     QOpenGLWidget::mouseReleaseEvent(event);
 }
 
 //Вовращает индекс точки, которую выделили, если не вделили,
 //то -1 ставит
-int OpenglGrid::checkPointSelected(const QVector2D &position)
+//есть ограничение на количество точек, по которому смотреть
+int OpenglGrid::checkPointSelected(const QVector2D &position, int stop)
 {
-    QVector<QVector2D>::iterator itBegin = verticesMirror.begin();
-    QVector<QVector2D>::iterator itEnd = verticesMirror.end();
+    QVector<QVector2D>::iterator itBegin = verticesRay.begin();
+    QVector<QVector2D>::iterator itEnd = verticesRay.end();
+    int stoper=verticesRay.size();
+    if(stop > 0)
+        stoper = stop;
 
     int newSelectionIndex = -1;
     // Цикл с использованием итераторов
     for (QVector<QVector2D>::iterator it = itBegin; it != itEnd; ++it)
     {
+        if(stoper == 0)
+            break;
         if(abs(it->x()-position.x()) < DEFAULT_POINT_SIZE/2 &&
             abs(it->y()-position.y()) < DEFAULT_POINT_SIZE/2)
             newSelectionIndex = std::distance(itBegin, it);
+        stoper--;
     }
-
     return newSelectionIndex;
-}
-
-void OpenglGrid::prepareGridPositions()
-{
-    verticesGrid.clear();
-    y_tiks = screenDimension.y() / static_cast<int>(gridStep.y());
-    for(int i = 0; i <= y_tiks; i++){
-        verticesGrid
-            << QVector2D(
-                   gridOffset.x(),
-                   gridOffset.y()+gridStep.y()*i)
-            << QVector2D(
-                   screenDimension.x(),
-                   gridOffset.y()+gridStep.y()*i);
-    }
-
-    x_tiks = screenDimension.x() / static_cast<int>(gridStep.x());
-    for(int i = 0; i <= x_tiks; i++){
-        verticesGrid
-            << QVector2D(
-                   gridOffset.x()+gridStep.x()*i,
-                   gridOffset.y())
-            << QVector2D(
-                   gridOffset.x()+gridStep.x()*i,
-                   screenDimension.y());
-    }
 }

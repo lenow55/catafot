@@ -2,7 +2,6 @@
 #define OPENGLGRID_H
 
 #include <QWidget>
-#include <iomanip>
 #include <QOpenGLWidget>
 #include "fontprovider.h"
 #include <QOpenGLFunctions>
@@ -17,7 +16,6 @@
 
 #include <Eigen/Dense>
 
-#define MAX_SIG_SLIDER 100
 #define PI 3.14159265
 
 class OpenglGrid : public QOpenGLWidget, protected QOpenGLFunctions
@@ -42,12 +40,6 @@ public:
     void            setCoordMatrix();
     QMatrix4x4      &getCoordMatrix();
 
-
-
-    void			paintGLHelperForAxisLabelsRendering();
-    void            paintGLHelperForGridRendering();
-    void            prepareGLForGridRendering();
-
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
@@ -65,25 +57,25 @@ private:
         RayPlaced,
         LKMModifyRay,
     };
-
-    void                            addApproxPoint(const QVector2D &point);
-    void                            genMirror(int count, float angle, float len);
-    void                            modifyApproxPoint(const QVector2D &point);
-    int                             checkPointSelected(const QVector2D &);
-    void                            setPointSelection(int newIndex);
-
+    // инициализации вспомогательных
     void                			initShaders();
     void                            createBuffers();
     void                            prepareGridPositions();
-    void                            initPointsBuffer();
+    void                            prepareGLForGridRendering();
+
+    void                            prepareApproxeDRendering();
+
+    void                            genMirror(int count, float angle, float len);
+
+    void                            addRayPoint(const QVector2D &point);
+    void                            modifyRayPoint(const QVector2D &point);
+    int                             checkPointSelected(const QVector2D &, int stop=-1);
 
     void                            XAxisLabelsRendering();
-    void                            PointsLabelsRendering();
+    void                            paintGLHelperForGridRendering();
 
-    void                            paintApproxLineRendering();
-    void                            prepareApproxeDRendering();
-    void                            paintApproxeDRendering();
-    void                            paintApproxPointsRendering();
+    void                            paintMirrorRendering();
+    void                            paintRayRendering();
 
     QRect                           viewport;
 
@@ -97,7 +89,6 @@ private:
 
     QOpenGLShaderProgram			programFont;
     QOpenGLShaderProgram			programGrid;
-    QOpenGLShaderProgram			programMirror;
 
     QThread							threadCons;
 

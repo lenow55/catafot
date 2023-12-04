@@ -49,6 +49,7 @@ else()
             mainwindow.h mainwindow.cpp
             algorithms.h
             algorithms.cpp
+            grid_and_axis_labels.cpp
         )
     endif()
 endif()
