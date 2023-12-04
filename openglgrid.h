@@ -63,7 +63,7 @@ private:
     void                            prepareGridPositions();
     void                            prepareGLForGridRendering();
 
-    void                            prepareApproxeDRendering();
+    void                            prepareRayRendering();
 
     void                            genMirror(int count, float angle, float len);
 

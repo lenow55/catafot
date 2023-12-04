@@ -257,13 +257,13 @@ void OpenglGrid::modifyRayPoint(const QVector2D &point)
 
     QVector<float> floatVector = {point.x(), point.y()};
 
-    MirrorBuffer.write(
+    RayBuffer.write(
         pointSelectIndex * sizeof(QVector2D),
         floatVector.data(),
         1 * sizeof(QVector2D)
         );
 
-    verticesMirror.replace(pointSelectIndex, point);
+    verticesRay.replace(pointSelectIndex, point);
 
     //    QVector<float> check;
     //    check.resize(30);
@@ -271,11 +271,11 @@ void OpenglGrid::modifyRayPoint(const QVector2D &point)
     //        0, check.data() ,verticesApprox.size()*sizeof(QVector2D));
     //    qDebug() << "content Buf: " << check;
 
-    MirrorBuffer.release();
-    MirrorVao.release();
+    RayBuffer.release();
+    RayVao.release();
 }
 
-void OpenglGrid::prepareApproxeDRendering()
+void OpenglGrid::prepareRayRendering()
 {
     qDebug() << "prepareApproxeDRendering";
 }
@@ -444,29 +444,29 @@ void OpenglGrid::paintGL()
 
 void OpenglGrid::mouseMoveEvent(QMouseEvent *event)
 {
-//     if (
-//         state == State::LKMModifyDeapprox ||
-//         state == State::LKMModifyApprox
-//         )
-//     {
-//         double x = double(
-//             event->x());
-//         double y = double(
-//             (viewport.height() - event->y()));
-//         pressedPos = QVector2D(x,y);
+    if (
+        state == State::LKMModifyDeRay ||
+        state == State::LKMModifyRay
+        )
+    {
+        double x = double(
+            event->x());
+        double y = double(
+            (viewport.height() - event->y()));
+        pressedPos = QVector2D(x,y);
 
-//         pressedPos = pressedPos - gridOffset;
-// //        qDebug() << "movedPos"
-// //                 << pressedPos;
+        pressedPos = pressedPos - gridOffset;
+//        qDebug() << "movedPos"
+//                 << pressedPos;
 
-//         modifyApproxPoint(pressedPos);
-//         if (state == State::LKMModifyApprox)
-//         {
-//             prepareMNK();
-//             prepareApproxeDRendering();
-//         }
-//         update();
-//     }
+        modifyRayPoint(pressedPos);
+        if (state == State::LKMModifyRay)
+        {
+            // prepareMNK();
+            prepareRayRendering();
+        }
+        update();
+    }
 }
 
 void OpenglGrid::mousePressEvent(QMouseEvent *event)
@@ -481,42 +481,54 @@ void OpenglGrid::mousePressEvent(QMouseEvent *event)
         pressedPos = pressedPos - gridOffset;
         qDebug() << "plot_data->inverse_data_matrix * position"
                  << pressedPos;
-    }
-    if (
-        state == State::StartState)
-    {
-        int newSelectIndex = checkPointSelected(pressedPos,2);
-        if (newSelectIndex == -1)
+        if (
+            state == State::StartState)
         {
-            addRayPoint(pressedPos);
-            if (verticesRay.size() < 2)
+            int newSelectIndex = checkPointSelected(pressedPos,2);
+            if (newSelectIndex == -1)
             {
-                state = State::LKMAddDeRay;
+                addRayPoint(pressedPos);
+                if (verticesRay.size() < 2)
+                {
+                    state = State::LKMAddDeRay;
+                }
+                else
+                {
+                    pointSelectIndex = 1;
+                    state = State::LKMModifyRay;
+                }
+                update();
             }
             else
             {
-                pointSelectIndex = 1;
+                pointSelectIndex = newSelectIndex;
+                state = State::LKMModifyDeRay;
+            }
+        }
+        if (
+            state == State::RayPlaced)
+        {
+            int newSelectIndex = checkPointSelected(pressedPos,2);
+            if (newSelectIndex != -1)
+            {
+                pointSelectIndex = newSelectIndex;
                 state = State::LKMModifyRay;
             }
+        }
+    }
+    else if (event->button() == Qt::MiddleButton)
+    {
+        if (
+            state == State::StartState ||
+            state == State::RayPlaced
+            )
+        {
+            verticesRay.clear();
+            pointSelectIndex = -1;
+            state = State::StartState;
             update();
         }
-        else
-        {
-            pointSelectIndex = newSelectIndex;
-            state = State::LKMModifyDeRay;
-        }
     }
-    if (
-        state == State::RayPlaced)
-    {
-        int newSelectIndex = checkPointSelected(pressedPos,2);
-        if (newSelectIndex == -1)
-        {
-            pointSelectIndex = newSelectIndex;
-            state = State::LKMModifyRay;
-        }
-    }
-
     QOpenGLWidget::mousePressEvent(event);
 }
 
@@ -533,8 +545,8 @@ void OpenglGrid::mouseReleaseEvent(QMouseEvent *event)
             )
             state = State::RayPlaced;
         pointSelectIndex = -1;
-
     }
+
     QOpenGLWidget::mouseReleaseEvent(event);
 }
 
