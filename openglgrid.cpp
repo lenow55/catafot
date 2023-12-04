@@ -213,23 +213,6 @@ void OpenglGrid::genMirror(int count, float angle, float len)
 
     // qDebug() << verticesMirror;
 
-    // QPair<QVector2D,QVector2D> ray(QVector2D(300,100),QVector2D(400,100));
-    // CrossResult result;
-    // result = cross_sem(
-    //     QPair<QVector2D,QVector2D>(
-    //         verticesMirror.at(2),verticesMirror.at(3)),
-    //         ray
-    //     );
-
-    // QVector3D V(verticesMirror.at(3)-verticesMirror.at(2),0);
-    // QVector3D W(0,0,1);
-    // QVector3D n_vec = normalVector(V,W);
-
-    // QVector3D rayV = ray.second - ray.first;
-
-    // QVector3D M = mirrorVector(rayV, n_vec);
-    // qDebug() << "V: " << V << "\n" << "M: " << M;
-
     MirrorVao.bind();
     MirrorBuffer.bind();
     // добавляем точку в хранилище
@@ -277,7 +260,79 @@ void OpenglGrid::modifyRayPoint(const QVector2D &point)
 
 void OpenglGrid::prepareRayRendering()
 {
-    qDebug() << "prepareApproxeDRendering";
+    qDebug() << "prepareRayRendering";
+    if(verticesRay.size() < 2)
+        return;
+
+    //флаг поиска отражения, повторяем цикл пока не
+    //столкнёмся с отсутствием пересечения
+    bool findingReflection = true;
+    int startIndex = 2;
+
+    // Удаление элементов с определенного индекса до конца
+    verticesRay.erase(verticesRay.begin() + startIndex, verticesRay.end());
+
+    QPair<QVector2D,QVector2D> ray(verticesRay.at(0),verticesRay.at(1));
+
+    int countMirrors = verticesMirror.size()-1;
+    CrossResult crossResult;
+    CrossResult nearestCrossResult;
+    nearestCrossResult.tau=10000;
+    nearestCrossResult.t=10000;
+    while(findingReflection)
+    {
+        nearestCrossResult.flag = -1;
+        for(int i = 0; i < countMirrors; i++)
+        {
+            crossResult = cross_sem(
+                QPair<QVector2D,QVector2D>(
+                    verticesMirror.at(i),verticesMirror.at(i+1)),
+                    ray
+                );
+            if(crossResult.flag > 1 && crossResult.tau < nearestCrossResult.tau && crossResult.tau>0)
+                nearestCrossResult=crossResult;
+        }
+        if(nearestCrossResult.flag < 2)
+        {
+            QVector2D lastRay(verticesRay.at(1)-verticesRay.at(0));
+            lastRay.normalize();
+            verticesRay.append(lastRay*2000+verticesRay.at(0));
+            findingReflection=false;
+        }
+        else
+        {
+            QVector2D lastRay(verticesRay.at(1)-verticesRay.at(0));
+            // lastRay.normalize();
+            verticesRay.append(lastRay*nearestCrossResult.tau+verticesRay.at(0));
+            findingReflection=false;
+        }
+    }
+
+    QVector3D V(verticesMirror.at(3)-verticesMirror.at(2),0);
+    QVector3D W(0,0,1);
+    QVector3D n_vec = normalVector(V,W);
+
+    // QVector3D rayV = ray.second - ray.first;
+
+    // QVector3D M = mirrorVector(rayV, n_vec);
+    // qDebug() << "V: " << V << "\n" << "M: " << M;
+    RayVao.bind();
+    RayBuffer.bind();
+
+    RayBuffer.write(
+        0,
+        verticesRay.data(),
+        verticesRay.size() * sizeof(QVector2D)
+        );
+
+    //    QVector<float> check;
+    //    check.resize(30);
+    //    approxBuffer.read(
+    //        0, check.data() ,verticesApprox.size()*sizeof(QVector2D));
+    //    qDebug() << "content Buf: " << check;
+
+    RayBuffer.release();
+    RayVao.release();
 }
 
 void OpenglGrid::paintRayRendering()
@@ -495,6 +550,7 @@ void OpenglGrid::mousePressEvent(QMouseEvent *event)
                 else
                 {
                     pointSelectIndex = 1;
+                    prepareRayRendering();
                     state = State::LKMModifyRay;
                 }
                 update();
